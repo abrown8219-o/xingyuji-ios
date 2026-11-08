@@ -10,23 +10,31 @@ echo "当前目录: $(pwd)"
 # 检查是否在正确位置
 if [ ! -f "XingyujiApp.swift" ]; then
   echo "错误：当前目录没有 XingyujiApp.swift"
-  echo "请确认在仓库根目录运行（应该有 .swift 文件）"
+  echo "请确认在仓库根目录运行"
   exit 1
 fi
 
 echo "[1/5] 安装 XcodeGen..."
-# Codespaces 是 Ubuntu，没有 brew，直接下载预编译二进制
 XCODEGEN_VERSION="2.42.0"
-curl -L "https://github.com/yonaskolb/XcodeGen/releases/download/${XCODEGEN_VERSION}/xcodegen.zip" -o /tmp/xcodegen.zip
-unzip -q /tmp/xcodegen.zip -d /tmp/xcodegen
 mkdir -p ~/.local/bin
-cp /tmp/xcodegen/bin/xcodegen ~/.local/bin/
-export PATH="$HOME/.local/bin:$PATH"
 
-xcodegen --version || { echo "XcodeGen 安装失败"; exit 1; }
+# 下载并解压
+curl -sL "https://github.com/yonaskolb/XcodeGen/releases/download/${XCODEGEN_VERSION}/xcodegen.zip" -o /tmp/xcodegen.zip
+unzip -q -o /tmp/xcodegen.zip -d /tmp/xcodegen
+cp /tmp/xcodegen/bin/xcodegen ~/.local/bin/
+
+# 立即生效并验证
+export PATH="$HOME/.local/bin:$PATH"
+echo "PATH: $PATH"
+ls -la ~/.local/bin/xcodegen
+
+if ! ~/.local/bin/xcodegen --version; then
+  echo "XcodeGen 安装失败"
+  exit 1
+fi
 
 echo "[2/5] 生成 Xcode 工程..."
-xcodegen
+~/.local/bin/xcodegen
 
 echo "[3/5] 编译 Release 版本..."
 xcodebuild \
