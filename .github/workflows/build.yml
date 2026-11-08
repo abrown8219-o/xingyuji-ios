@@ -1,0 +1,53 @@
+# 星语机 iOS 云端自动编译
+# 触发方式：push 到 main 分支，或在 GitHub 网页 Actions 页手动点 "Run workflow"
+# 产物：未签名 ipa（用 SideStore/Sideloadly 签名后安装）
+
+name: 编译 iOS ipa
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-14
+
+    steps:
+      - name: 拉取源码
+        uses: actions/checkout@v4
+
+      - name: 安装 XcodeGen
+        run: brew install xcodegen
+
+      - name: 生成 Xcode 工程
+        run: |
+          cd xingyuji_ios
+          xcodegen
+
+      - name: 编译（不签名）
+        run: |
+          cd xingyuji_ios
+          xcodebuild \
+            -project Xingyuji.xcodeproj \
+            -scheme Xingyuji \
+            -configuration Release \
+            -sdk iphoneos \
+            -destination 'generic/platform=iOS' \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            build
+
+      - name: 打包成 ipa
+        run: |
+          APP=$(find ~/Library/Developer/Xcode/DerivedData -name "Xingyuji.app" -path "*Release-iphoneos*" | head -1)
+          mkdir -p Payload
+          cp -r "$APP" Payload/
+          zip -qr 星语机.ipa Payload
+          ls -lh 星语机.ipa
+
+      - name: 上传 ipa 产物
+        uses: actions/upload-artifact@v4
+        with:
+          name: xingyuji-ipa
+          path: Payload/../星语机.ipa
